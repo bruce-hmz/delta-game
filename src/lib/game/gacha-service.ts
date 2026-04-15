@@ -1,6 +1,6 @@
 // Gacha service — core pull logic, drop rate calculation, pity mechanics
 
-import { getSupabaseClient } from "@/storage/database/supabase-client";
+import { getDrizzleClient } from "@/storage/database/drizzle-client";
 import { crateConfigs, pullHistory, playerStreaks, guestSessions } from "@/storage/database/shared/schema";
 import { eq, desc, and, sql, count, lt } from "drizzle-orm";
 import type { GachaQuality } from "./gacha-constants";
@@ -143,7 +143,7 @@ export async function executePull(params: {
   isGuest: boolean;
 }): Promise<PullResult> {
   const { playerId, crateId, idempotencyKey, isGuest } = params;
-  const db = getSupabaseClient();
+  const db = getDrizzleClient();
 
   // 1. Check idempotency
   const existing = await db
@@ -300,7 +300,7 @@ async function getPlayerStreak(
   pullsToday: number;
   dailyLimit: number;
 } | null> {
-  const db = getSupabaseClient();
+  const db = getDrizzleClient();
   const rows = await db
     .select()
     .from(playerStreaks)
@@ -324,7 +324,7 @@ export async function ensurePlayerStreak(
   playerId: string,
   dailyLimit: number = PLAYER_DAILY_LIMIT
 ): Promise<void> {
-  const db = getSupabaseClient();
+  const db = getDrizzleClient();
   await db.insert(playerStreaks).values({
     playerId,
     dailyLimit,
@@ -339,7 +339,7 @@ export async function createGuestSession(): Promise<{
   ticketsRemaining: number;
   dailyLimit: number;
 }> {
-  const db = getSupabaseClient();
+  const db = getDrizzleClient();
   const inserted = await db
     .insert(guestSessions)
     .values({ dailyLimit: GUEST_DAILY_LIMIT })
@@ -357,7 +357,7 @@ export async function createGuestSession(): Promise<{
  * Get crate listing.
  */
 export async function getCrates(): Promise<CrateInfo[]> {
-  const db = getSupabaseClient();
+  const db = getDrizzleClient();
   const rows = await db
     .select()
     .from(crateConfigs)
@@ -383,7 +383,7 @@ export async function getCollection(
   limit: number = 20,
   quality?: GachaQuality
 ): Promise<CollectionPage> {
-  const db = getSupabaseClient();
+  const db = getDrizzleClient();
   const offset = (page - 1) * limit;
 
   const conditions = [eq(pullHistory.playerId, playerId)];
@@ -411,7 +411,7 @@ export async function getCollection(
       itemName: i.itemName,
       quality: i.quality as GachaQuality,
       value: i.value,
-      createdAt: i.createdAt,
+      createdAt: String(i.createdAt),
     })),
     total,
     page,
@@ -423,7 +423,7 @@ export async function getCollection(
  * Get player stats.
  */
 export async function getStats(playerId: string): Promise<PlayerStats> {
-  const db = getSupabaseClient();
+  const db = getDrizzleClient();
 
   const [streakRow, qualityCounts, recentPulls] = await Promise.all([
     getPlayerStreak(playerId, false),
@@ -466,7 +466,7 @@ export async function getStats(playerId: string): Promise<PlayerStats> {
     recentPulls: recentPulls.map((p) => ({
       name: p.name,
       quality: p.quality as GachaQuality,
-      createdAt: p.createdAt,
+      createdAt: String(p.createdAt),
     })),
   };
 }

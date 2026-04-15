@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSupabaseClient } from "@/storage/database/supabase-client";
+import { getDrizzleClient } from "@/storage/database/drizzle-client";
 import { pullHistory, playerStreaks } from "@/storage/database/shared/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { rollQuality, generateItem } from "@/lib/game/gacha-service";
 import { getCrates } from "@/lib/game/gacha-service";
 import { seededRandom, PITY_THRESHOLD } from "@/lib/game/gacha-constants";
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "no_guest_session" }, { status: 400 });
     }
 
-    const db = getSupabaseClient();
+    const db = getDrizzleClient();
     let synced = 0;
     let skipped = 0;
 
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
       .set({
         pityCount,
         totalPulls: allPulls.length,
-        updatedAt: new Date().toISOString(),
+        updatedAt: sql`NOW()`,
       })
       .where(eq(playerStreaks.playerId, playerId));
 
