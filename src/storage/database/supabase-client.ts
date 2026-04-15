@@ -1,0 +1,123 @@
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { execSync } from 'child_process';
+import * as fs from 'fs';
+import * as path from 'path';
+
+let envLoaded = false;
+
+interface SupabaseCredentials {
+  url: string;
+  anonKey: string;
+}
+
+// 从配置文件读取配置（支持多种格式）
+function readSupabaseConfig(): { url?: string; anonKey?: string } {
+  const cwd = process.cwd();
+  
+  // 尝试多种配置文件
+  const configFiles = [
+    path.join(cwd, 'supabase_config.json'),
+    path.join(cwd, '.env'),
+    path.join(cwd, '.env.local'),
+  ];
+  
+  for (const configPath of configFiles) {
+    if (!fs.existsSync(configPath)) continue;
+    
+    try {
+      const content = fs.readFileSync(configPath, 'utf8');
+      
+      // JSON 格式
+      if (configPath.endsWith('.json')) {
+        const json = JSON.parse(content);
+        return {
+          url: json.SUPABASE_URL || json.COZE_SUPABASE_URL || json.url,
+          anonKey: json.SUPABASE_ANON_KEY || json.COZE_SUPABASE_ANON_KEY || json.anonKey,
+        };
+      }
+      
+      // .env 格式
+      const lines = content.split('\n');
+      let url: string | undefined;
+      let anonKey: string | undefined;
+      
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+        
+        const eqIndex = trimmed.indexOf('=');
+        if (eqIndex > 0) {
+          const key = trimmed.substring(0, eqIndex).trim();
+          let value = trimmed.substring(eqIndex + 1).trim();
+          
+          // 移除引号
+          if ((value.startsWith('"') && value.endsWith('"')) ||
+              (value.startsWith("'") && value.endsWith("'"))) {
+            value = value.slice(1, -1);
+          }
+          
+          if (key === 'COZE_SUPABASE_URL' || key === 'SUPABASE_URL' || key === 'NEXT_PUBLIC_SUPABASE_URL') {
+            url = url || value;
+          } else if (key === 'COZE_SUPABASE_ANON_KEY' || key === 'SUPABASE_ANON_KEY' || key === 'NEXT_PUBLIC_SUPABASE_ANON_KEY') {
+            anonKey = anonKey || value;
+          }
+        }
+      }
+      
+      if (url && anonKey) {
+        return { url, anonKey };
+      }
+    } catch (err) {
+      // 继续尝试下一个文件
+    }
+  }
+  
+  return {};
+}
+
+function getSupabaseCredentials(): SupabaseCredentials {
+  // 🔒 强制只使用配置文件，完全忽略环境变量
+  // 沙箱环境变量 COZE_SUPABASE_URL 会覆盖用户数据库配置
+  const config = readSupabaseConfig();
+  
+  if (config.url && config.anonKey) {
+    // 直接返回配置，不使用环境变量
+    console.log('[Supabase Config] Using supabase_config.json:', config.url);
+    return { url: config.url, anonKey: config.anonKey };
+  }
+  
+  // 如果配置文件读取失败，抛出错误
+  console.error('[Supabase Config] Failed to read config, throwing error');
+  throw new Error('Failed to read Supabase config from supabase_config.json. Please ensure the file exists and contains valid JSON.');
+}
+
+function getSupabaseClient(token?: string): SupabaseClient {
+  const { url, anonKey } = getSupabaseCredentials();
+
+  if (token) {
+    return createClient(url, anonKey, {
+      global: {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+      db: {
+        timeout: 60000,
+      },
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
+  }
+
+  return createClient(url, anonKey, {
+    db: {
+      timeout: 60000,
+    },
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+}
+
+export { getSupabaseCredentials, getSupabaseClient };
