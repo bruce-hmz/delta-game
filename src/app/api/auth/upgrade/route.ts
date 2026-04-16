@@ -1,48 +1,125 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ensurePlayerStreak } from "@/lib/game/gacha-service";
-import { PLAYER_DAILY_LIMIT } from "@/lib/game/gacha-constants";
+import { registerSchema } from "@/lib/auth/validation";
+import { migrateGuestData } from "@/lib/auth/migration-service";
+import { getSupabaseAdminClient } from "@/storage/database/supabase-client";
+import { db } from "@/storage/database/drizzle-client";
+import { playerStreaks } from "@/storage/database/shared/schema";
+import { eq } from "drizzle-orm";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { phone, wechatId } = body;
 
-    if (!phone && !wechatId) {
-      return NextResponse.json({ error: "invalid_input" }, { status: 400 });
+    // 验证输入
+    const validation = registerSchema.safeParse(body);
+    if (!validation.success) {
+      return NextResponse.json(
+        { success: false, error: "输入验证失败", details: validation.error.issues },
+        { status: 400 }
+      );
     }
 
-    // Get guest session to identify the upgrading player
-    const guestSession = request.cookies.get("guest_session")?.value;
-    if (!guestSession) {
-      return NextResponse.json({ error: "no_guest_session" }, { status: 400 });
+    const { email, password } = validation.data;
+
+    // 获取游客会话
+    const guestSessionId = request.cookies.get("guest_session")?.value;
+    if (!guestSessionId) {
+      return NextResponse.json(
+        { success: false, error: "未找到游客会话" },
+        { status: 400 }
+      );
     }
 
-    // TODO: Implement actual registration (phone OTP or WeChat auth)
-    // For now, the guest session ID becomes the player ID
-    // The sync endpoint handles migrating pulls from guest to player
-    const playerId = guestSession;
-
-    // Upgrade daily limit from guest (3) to player (5)
-    await ensurePlayerStreak(playerId, PLAYER_DAILY_LIMIT);
-
-    const response = NextResponse.json({
-      playerId,
-      ticketsRemaining: PLAYER_DAILY_LIMIT,
-      dailyLimit: PLAYER_DAILY_LIMIT,
+    // 使用 Supabase Auth 创建用户
+    const supabaseAdmin = getSupabaseAdminClient();
+    const { data: authData, error: authError } = await supabaseAdmin.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: undefined
+      }
     });
 
-    // Clear guest cookie — player now uses auth header
+    if (authError) {
+      return NextResponse.json(
+        { success: false, error: authError.message },
+        { status: 400 }
+      );
+    }
+
+    if (!authData.user) {
+      return NextResponse.json(
+        { success: false, error: "用户创建失败" },
+        { status: 500 }
+      );
+    }
+
+    const supabaseUid = authData.user.id;
+
+    // 迁移游客数据
+    const migrationResult = await migrateGuestData(db, guestSessionId, supabaseUid);
+    if (!migrationResult.success) {
+      // 迁移失败，删除已创建的 Auth 用户
+      await supabaseAdmin.auth.admin.deleteUser(supabaseUid);
+      return NextResponse.json(
+        { success: false, error: "数据迁移失败: " + migrationResult.error },
+        { status: 500 }
+      );
+    }
+
+    // 更新 playerStreaks 记录
+    await db.update(playerStreaks)
+      .set({
+        email,
+        supabaseUid,
+        isRegistered: true,
+        dailyLimit: 5,
+        updatedAt: new Date()
+      })
+      .where(eq(playerStreaks.playerId, supabaseUid));
+
+    // 获取 session
+    const { data: sessionData, error: sessionError } = await supabaseAdmin.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (sessionError || !sessionData.session) {
+      return NextResponse.json(
+        { success: false, error: "登录失败" },
+        { status: 500 }
+      );
+    }
+
+    // 清除游客 cookie
+    const response = NextResponse.json({
+      success: true,
+      accessToken: sessionData.session.access_token,
+      user: {
+        id: supabaseUid,
+        email
+      },
+      playerId: supabaseUid,
+      migratedData: {
+        pullsMigrated: migrationResult.migratedPulls
+      }
+    });
+
     response.cookies.set("guest_session", "", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: 0,
-      path: "/",
+      path: "/"
     });
 
     return response;
+
   } catch (error) {
     console.error("[Upgrade] Error:", error);
-    return NextResponse.json({ error: "internal_error" }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: "升级失败，请稍后重试" },
+      { status: 500 }
+    );
   }
 }
