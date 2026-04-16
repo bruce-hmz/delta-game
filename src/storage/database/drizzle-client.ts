@@ -10,12 +10,24 @@ export function getDrizzleClient() {
   const connectionString = process.env.DATABASE_URL;
 
   if (!connectionString) {
-    throw new Error('DATABASE_URL must be set. Example: postgres://postgres.[ref]:[password]@aws-0-[region].pooler.supabase.com:6543/postgres');
+    throw new Error('DATABASE_URL must be set.');
   }
 
+  // Parse URL manually to avoid pg connection string parsing issues
+  const url = new URL(connectionString);
+
+  console.log(`[Drizzle] Connecting to ${url.hostname}:${url.port} as ${url.username}`);
+
   const pool = new Pool({
-    connectionString,
+    host: url.hostname,
+    port: parseInt(url.port || '5432'),
+    database: url.pathname.slice(1),
+    user: decodeURIComponent(url.username),
+    password: decodeURIComponent(url.password),
     ssl: { rejectUnauthorized: false },
+    max: 5,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000,
   });
 
   drizzleInstance = drizzle(pool, { schema });
