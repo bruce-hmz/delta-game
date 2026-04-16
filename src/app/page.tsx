@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import GachaCanvas from '@/components/game/GachaCanvas';
 import type { GachaQuality } from '@/lib/game/gacha-constants';
+import { useAuth } from '@/components/auth/AuthProvider';
+import { UpgradePrompt } from '@/components/auth/UpgradePrompt';
 
 // ==================== Types ====================
 
@@ -27,12 +29,14 @@ type PageView = 'gacha' | 'collection' | 'stats' | 'probability';
 // ==================== Page Component ====================
 
 export default function HomePage() {
+  const { isAuthenticated, login } = useAuth();
   const [session, setSession] = useState<SessionInfo | null>(null);
   const [crates, setCrates] = useState<CrateInfo[]>([]);
   const [pityProgress, setPityProgress] = useState({ current: 0, target: 50 });
   const [view, setView] = useState<PageView>('gacha');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
 
   // ==================== Init ====================
 
@@ -100,6 +104,18 @@ export default function HomePage() {
     }
   };
 
+  // ==================== Upgrade Handlers ====================
+
+  const handleUpgradeClick = () => {
+    setShowUpgradePrompt(true);
+  };
+
+  const handleUpgradeSuccess = (data: { accessToken: string; playerId: string; user: any }) => {
+    login(data.accessToken, data.playerId, data.user);
+    // 刷新页面以使用新的认证状态
+    window.location.reload();
+  };
+
   // ==================== Loading State ====================
 
   if (loading) {
@@ -148,6 +164,24 @@ export default function HomePage() {
 
   return (
     <div className="h-dvh w-full bg-[#0a0a0a] overflow-hidden pb-16">
+      {/* 升级提示横幅（如果未登录） */}
+      {!isAuthenticated && (
+        <div className="absolute top-4 left-4 right-4 z-10">
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 flex items-center justify-between">
+            <div className="text-sm text-amber-400">
+              <span className="font-medium">游客模式</span>
+              <span className="text-zinc-500 ml-2">升级账号可保存记录，每日+2次开箱</span>
+            </div>
+            <button
+              onClick={handleUpgradeClick}
+              className="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-black text-sm font-medium rounded transition-colors"
+            >
+              升级
+            </button>
+          </div>
+        </div>
+      )}
+
       <GachaCanvas
         crates={crates}
         ticketsRemaining={session?.ticketsRemaining ?? 0}
@@ -167,6 +201,14 @@ export default function HomePage() {
         <NavLink href="/stats" icon="📊" label="统计" />
         <NavLink href="/probability" icon="📋" label="概率" />
       </div>
+
+      {/* 升级引导抽屉 */}
+      <UpgradePrompt
+        isOpen={showUpgradePrompt}
+        onClose={() => setShowUpgradePrompt(false)}
+        guestSessionId={session?.sessionId}
+        onUpgradeSuccess={handleUpgradeSuccess}
+      />
     </div>
   );
 }
