@@ -107,6 +107,10 @@ export const playerStreaks = pgTable(
 	"player_streaks",
 	{
 		playerId: varchar("player_id", { length: 36 }).primaryKey(),
+		email: varchar("email", { length: 255 }).unique(),
+		supabaseUid: varchar("supabase_uid", { length: 36 }),
+		isRegistered: boolean("is_registered").notNull().default(false),
+		upgradedAt: timestamp("upgraded_at", { withTimezone: true }),
 		currentStreak: integer("current_streak").notNull().default(0),
 		longestStreak: integer("longest_streak").notNull().default(0),
 		lastPullDate: timestamp("last_pull_date", { withTimezone: true }),
