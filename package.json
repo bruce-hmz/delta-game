@@ -73,15 +73,15 @@
     "zod": "^4.3.5",
     "typescript": "^5",
     "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4"
+    "tailwindcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19"
   },
   "devDependencies": {
     "@react-dev-inspector/babel-plugin": "^2.0.1",
     "@react-dev-inspector/middleware": "^2.0.1",
     "@types/howler": "^2.2.12",
-    "@types/node": "^20",
     "@types/pg": "^8.16.0",
-    "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/uuid": "^11.0.0",
     "@vitejs/plugin-react": "^6.0.1",

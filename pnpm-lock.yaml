@@ -101,6 +101,12 @@ importers:
       '@tailwindcss/postcss':
         specifier: ^4
         version: 4.1.18
+      '@types/node':
+        specifier: ^20
+        version: 20.19.30
+      '@types/react':
+        specifier: ^19
+        version: 19.2.10
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -198,15 +204,9 @@ importers:
       '@types/howler':
         specifier: ^2.2.12
         version: 2.2.12
-      '@types/node':
-        specifier: ^20
-        version: 20.19.30
       '@types/pg':
         specifier: ^8.16.0
         version: 8.16.0
-      '@types/react':
-        specifier: ^19
-        version: 19.2.10
       '@types/react-dom':
         specifier: ^19
         version: 19.2.3(@types/react@19.2.10)
