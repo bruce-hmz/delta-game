@@ -2,7 +2,7 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 import * as schema from './shared/schema';
 
-let drizzleInstance: ReturnType<typeof drizzle> | null = null;
+let drizzleInstance: ReturnType<typeof drizzle<typeof schema>> | null = null;
 
 export function getDrizzleClient() {
   if (drizzleInstance) return drizzleInstance;
@@ -34,5 +34,10 @@ export function getDrizzleClient() {
   return drizzleInstance;
 }
 
-// 导出 db 实例供 API 路由使用
-export const db = getDrizzleClient();
+// 导出 db 实例供 API 路由使用（懒加载）
+export const db: ReturnType<typeof drizzle<typeof schema>> = new Proxy({} as ReturnType<typeof drizzle<typeof schema>>, {
+  get(target, prop) {
+    const client = getDrizzleClient();
+    return (client as any)[prop];
+  }
+});
