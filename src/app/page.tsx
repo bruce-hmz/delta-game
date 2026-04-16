@@ -147,7 +147,7 @@ export default function HomePage() {
   // ==================== Main View ====================
 
   return (
-    <div className="h-dvh w-full bg-[#0a0a0a] overflow-hidden">
+    <div className="h-dvh w-full bg-[#0a0a0a] overflow-hidden pb-16">
       <GachaCanvas
         crates={crates}
         ticketsRemaining={session?.ticketsRemaining ?? 0}
@@ -156,7 +156,7 @@ export default function HomePage() {
       />
 
       {/* Bottom nav */}
-      <div className="absolute bottom-0 left-0 right-0 flex items-center justify-around py-2 bg-[#0a0a0a]/90 backdrop-blur-sm border-t border-zinc-900 max-w-[430px] mx-auto">
+      <div className="fixed bottom-0 left-0 right-0 flex items-center justify-around py-2 bg-[#0a0a0]/90 backdrop-blur-sm border-t border-zinc-900 max-w-[430px] mx-auto">
         <NavButton
           active={view === 'gacha'}
           onClick={() => setView('gacha')}
