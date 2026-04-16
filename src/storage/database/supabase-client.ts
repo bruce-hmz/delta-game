@@ -11,7 +11,7 @@ interface SupabaseCredentials {
 }
 
 // 从配置文件读取配置（支持多种格式）
-function readSupabaseConfig(): { url?: string; anonKey?: string } {
+function readSupabaseConfig(): { url?: string; anonKey?: string; serviceRoleKey?: string } {
   const cwd = process.cwd();
   
   // 尝试多种配置文件
@@ -33,6 +33,7 @@ function readSupabaseConfig(): { url?: string; anonKey?: string } {
         return {
           url: json.SUPABASE_URL || json.url,
           anonKey: json.SUPABASE_ANON_KEY || json.anonKey,
+          serviceRoleKey: json.SUPABASE_SERVICE_ROLE_KEY || json.serviceRoleKey,
         };
       }
       
@@ -40,6 +41,7 @@ function readSupabaseConfig(): { url?: string; anonKey?: string } {
       const lines = content.split('\n');
       let url: string | undefined;
       let anonKey: string | undefined;
+      let serviceRoleKey: string | undefined;
       
       for (const line of lines) {
         const trimmed = line.trim();
@@ -60,12 +62,14 @@ function readSupabaseConfig(): { url?: string; anonKey?: string } {
             url = url || value;
           } else if (key === 'SUPABASE_ANON_KEY' || key === 'NEXT_PUBLIC_SUPABASE_ANON_KEY') {
             anonKey = anonKey || value;
+          } else if (key === 'SUPABASE_SERVICE_ROLE_KEY') {
+            serviceRoleKey = serviceRoleKey || value;
           }
         }
       }
       
       if (url && anonKey) {
-        return { url, anonKey };
+        return { url, anonKey, serviceRoleKey };
       }
     } catch (err) {
       // 继续尝试下一个文件
@@ -115,6 +119,25 @@ function getSupabaseClient(token?: string): SupabaseClient {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
+    },
+  });
+}
+
+// 服务端 Supabase Admin 客户端（使用 service_role key）
+export function getSupabaseAdminClient(): SupabaseClient {
+  const config = readSupabaseConfig();
+  
+  if (!config.url || !config.serviceRoleKey) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY not found in config. Admin operations require service role key.');
+  }
+  
+  return createClient(config.url, config.serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+    db: {
+      timeout: 60000,
     },
   });
 }

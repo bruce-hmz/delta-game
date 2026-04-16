@@ -33,3 +33,6 @@ export function getDrizzleClient() {
   drizzleInstance = drizzle(pool, { schema });
   return drizzleInstance;
 }
+
+// 导出 db 实例供 API 路由使用
+export const db = getDrizzleClient();
