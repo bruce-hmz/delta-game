@@ -75,15 +75,15 @@
     "@tailwindcss/postcss": "^4",
     "tailwindcss": "^4",
     "@types/node": "^20",
-    "@types/react": "^19"
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/pg": "^8.16.0",
+    "@types/uuid": "^11.0.0"
   },
   "devDependencies": {
     "@react-dev-inspector/babel-plugin": "^2.0.1",
     "@react-dev-inspector/middleware": "^2.0.1",
     "@types/howler": "^2.2.12",
-    "@types/pg": "^8.16.0",
-    "@types/react-dom": "^19",
-    "@types/uuid": "^11.0.0",
     "@vitejs/plugin-react": "^6.0.1",
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
