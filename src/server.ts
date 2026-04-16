@@ -2,8 +2,7 @@ import { createServer } from 'http';
 import { parse } from 'url';
 import next from 'next';
 
-// COZE_PROJECT_ENV: DEV (开发) 或 PROD (生产)
-const dev = process.env.COZE_PROJECT_ENV !== 'PROD';
+const dev = process.env.NODE_ENV !== 'production';
 const hostname = process.env.HOSTNAME || 'localhost';
 const port = parseInt(process.env.PORT || '5000', 10);
 
@@ -29,7 +28,7 @@ app.prepare().then(() => {
   server.listen(port, () => {
     console.log(
       `> Server listening at http://${hostname}:${port} as ${
-        dev ? 'development' : process.env.COZE_PROJECT_ENV
+        dev ? 'development' : 'production'
       }`,
     );
   });

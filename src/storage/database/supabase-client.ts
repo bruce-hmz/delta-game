@@ -31,8 +31,8 @@ function readSupabaseConfig(): { url?: string; anonKey?: string } {
       if (configPath.endsWith('.json')) {
         const json = JSON.parse(content);
         return {
-          url: json.SUPABASE_URL || json.COZE_SUPABASE_URL || json.url,
-          anonKey: json.SUPABASE_ANON_KEY || json.COZE_SUPABASE_ANON_KEY || json.anonKey,
+          url: json.SUPABASE_URL || json.url,
+          anonKey: json.SUPABASE_ANON_KEY || json.anonKey,
         };
       }
       
@@ -56,9 +56,9 @@ function readSupabaseConfig(): { url?: string; anonKey?: string } {
             value = value.slice(1, -1);
           }
           
-          if (key === 'COZE_SUPABASE_URL' || key === 'SUPABASE_URL' || key === 'NEXT_PUBLIC_SUPABASE_URL') {
+          if (key === 'SUPABASE_URL' || key === 'NEXT_PUBLIC_SUPABASE_URL') {
             url = url || value;
-          } else if (key === 'COZE_SUPABASE_ANON_KEY' || key === 'SUPABASE_ANON_KEY' || key === 'NEXT_PUBLIC_SUPABASE_ANON_KEY') {
+          } else if (key === 'SUPABASE_ANON_KEY' || key === 'NEXT_PUBLIC_SUPABASE_ANON_KEY') {
             anonKey = anonKey || value;
           }
         }
@@ -76,8 +76,7 @@ function readSupabaseConfig(): { url?: string; anonKey?: string } {
 }
 
 function getSupabaseCredentials(): SupabaseCredentials {
-  // 🔒 强制只使用配置文件，完全忽略环境变量
-  // 沙箱环境变量 COZE_SUPABASE_URL 会覆盖用户数据库配置
+  // Force config file only, ignore environment variables
   const config = readSupabaseConfig();
   
   if (config.url && config.anonKey) {

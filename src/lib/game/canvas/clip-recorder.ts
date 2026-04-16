@@ -2,7 +2,10 @@
 // Records 5-10 seconds around red/gold loot drops
 // Exports as vertical video (9:16) with game branding
 
-import type { Quality } from '../types';
+import type { GachaQuality } from '../gacha-constants';
+
+// Backwards compat alias
+type Quality = GachaQuality;
 
 // ==================== Types ====================
 
