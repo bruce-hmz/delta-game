@@ -91,6 +91,11 @@ export default function GachaCanvas({
   const [isPulling, setIsPulling] = useState(false);
   const [showResult, setShowResult] = useState(false);
 
+  // Sync tickets when prop changes
+  useEffect(() => {
+    setTickets(initialTickets);
+  }, [initialTickets]);
+
   const crate = crates[selectedCrate] ?? crates[0];
 
   // ==================== Engine Setup ====================
