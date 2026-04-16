@@ -21,7 +21,7 @@ export function getDrizzleClient() {
 
   const pool = new Pool({
     connectionString: sslUrl,
-    ssl: true,
+    ssl: { rejectUnauthorized: false },
   });
 
   drizzleInstance = drizzle(pool, { schema });
