@@ -54,15 +54,15 @@ export async function POST(request: NextRequest) {
 }
 
 function getPlayerId(request: NextRequest): string | null {
-  // Check guest session cookie first
-  const guestSession = request.cookies.get("guest_session")?.value;
-  if (guestSession) return guestSession;
-
-  // Check authorization header for registered players
+  // Authorization header takes priority (logged-in user)
   const authHeader = request.headers.get("authorization");
   if (authHeader?.startsWith("Bearer ")) {
-    return authHeader.slice(7); // TODO: validate JWT
+    return authHeader.slice(7);
   }
+
+  // Fallback to guest session cookie
+  const guestSession = request.cookies.get("guest_session")?.value;
+  if (guestSession) return guestSession;
 
   return null;
 }

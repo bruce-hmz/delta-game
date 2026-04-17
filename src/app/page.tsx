@@ -44,9 +44,9 @@ export default function HomePage() {
     init();
   }, []);
 
-  const init = async () => {
+  const init = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
 
       // 检查是否已登录
       const storedToken = localStorage.getItem('access_token');
@@ -117,7 +117,7 @@ export default function HomePage() {
       setError('初始化失败，请刷新重试');
       console.error('[Init]', err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -129,8 +129,7 @@ export default function HomePage() {
 
   const handleUpgradeSuccess = async (data: { accessToken: string; playerId: string; user: any }) => {
     login(data.accessToken, data.playerId, data.user);
-    // 重新初始化以加载用户数据（不再 reload，避免走游客流程）
-    await init();
+    await init(true); // silent refresh, no loading flash
   };
 
   // ==================== Loading State ====================

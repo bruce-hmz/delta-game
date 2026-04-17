@@ -27,9 +27,11 @@ export async function GET(request: NextRequest) {
 }
 
 function getPlayerId(request: NextRequest): string | null {
-  const guestSession = request.cookies.get("guest_session")?.value;
-  if (guestSession) return guestSession;
+  // Authorization header takes priority (logged-in user)
   const authHeader = request.headers.get("authorization");
   if (authHeader?.startsWith("Bearer ")) return authHeader.slice(7);
+  // Fallback to guest session cookie
+  const guestSession = request.cookies.get("guest_session")?.value;
+  if (guestSession) return guestSession;
   return null;
 }
