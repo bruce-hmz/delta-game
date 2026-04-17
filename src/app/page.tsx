@@ -152,7 +152,7 @@ export default function HomePage() {
           <div className="text-4xl mb-4">⚠️</div>
           <div className="text-sm text-red-400 mb-4">{error}</div>
           <button
-            onClick={init}
+            onClick={() => init()}
             className="px-6 py-2 bg-zinc-800 rounded-lg text-sm"
           >
             重试
