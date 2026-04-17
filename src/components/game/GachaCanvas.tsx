@@ -37,6 +37,7 @@ interface GachaCanvasProps {
   ticketsRemaining: number;
   dailyLimit: number;
   pityProgress: { current: number; target: number };
+  accessToken?: string | null;
 }
 
 // ==================== Quality Colors ====================
@@ -78,6 +79,7 @@ export default function GachaCanvas({
   ticketsRemaining: initialTickets,
   dailyLimit,
   pityProgress: initialPity,
+  accessToken,
 }: GachaCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<GachaEngine | null>(null);
@@ -150,7 +152,10 @@ export default function GachaCanvas({
     try {
       const res = await fetch('/api/gacha/pull', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
         body: JSON.stringify({ crateId: crate.id, idempotencyKey }),
       });
 

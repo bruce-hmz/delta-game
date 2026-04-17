@@ -29,7 +29,7 @@ type PageView = 'gacha' | 'collection' | 'stats' | 'probability';
 // ==================== Page Component ====================
 
 export default function HomePage() {
-  const { isAuthenticated, login } = useAuth();
+  const { isAuthenticated, accessToken, login } = useAuth();
   const [session, setSession] = useState<SessionInfo | null>(null);
   const [crates, setCrates] = useState<CrateInfo[]>([]);
   const [pityProgress, setPityProgress] = useState({ current: 0, target: 50 });
@@ -203,6 +203,7 @@ export default function HomePage() {
         ticketsRemaining={session?.ticketsRemaining ?? 0}
         dailyLimit={session?.dailyLimit ?? 3}
         pityProgress={pityProgress}
+        accessToken={isAuthenticated ? accessToken : null}
       />
 
       {/* Bottom nav */}
