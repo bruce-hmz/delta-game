@@ -14,13 +14,13 @@ interface UpgradePromptProps {
   isOpen: boolean;
   onClose: () => void;
   guestSessionId?: string;
-  onUpgradeSuccess: (data: { accessToken: string; playerId: string }) => void;
+  onUpgradeSuccess: (data: { accessToken: string; playerId: string; user: any }) => void;
 }
 
 export function UpgradePrompt({ isOpen, onClose, guestSessionId, onUpgradeSuccess }: UpgradePromptProps) {
   const [step, setStep] = useState<'intro' | 'form'>('intro');
 
-  const handleSuccess = (data: { accessToken: string; playerId: string }) => {
+  const handleSuccess = (data: { accessToken: string; playerId: string; user: any }) => {
     onUpgradeSuccess(data);
     onClose();
     setStep('intro');
