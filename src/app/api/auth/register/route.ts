@@ -20,14 +20,12 @@ export async function POST(request: NextRequest) {
 
     const { email, password, guestSessionId } = validation.data;
 
-    // 使用 Supabase Auth 创建用户
+    // 使用 Supabase Admin API 直接创建用户（绕过 signUp 限流）
     const supabaseAdmin = getSupabaseAdminClient();
-    const { data: authData, error: authError } = await supabaseAdmin.auth.signUp({
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
-      options: {
-        emailRedirectTo: undefined // 禁用邮箱验证
-      }
+      email_confirm: true, // 自动确认邮箱，无需验证
     });
 
     if (authError) {
