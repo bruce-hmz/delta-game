@@ -48,23 +48,63 @@ export default function HomePage() {
     try {
       setLoading(true);
 
-      // Create guest session (returns existing if cookie set)
-      const sessionRes = await fetch('/api/auth/guest', { method: 'POST' });
-      const sessionData = await sessionRes.json();
+      // 检查是否已登录
+      const storedToken = localStorage.getItem('access_token');
 
-      if (sessionRes.ok) {
-        setSession({
-          sessionId: sessionData.sessionId,
-          ticketsRemaining: sessionData.ticketsRemaining,
-          dailyLimit: sessionData.dailyLimit,
-        });
-      } else if (sessionRes.status === 409) {
-        // Session exists — fetch stats to get ticket count
-        setSession({
-          sessionId: sessionData.sessionId,
-          ticketsRemaining: 3, // default, will be corrected by stats
-          dailyLimit: 3,
-        });
+      if (storedToken) {
+        // 已登录用户：跳过 guest 流程，直接拉用户数据
+        const authHeaders = { Authorization: `Bearer ${storedToken}` };
+
+        const statsRes = await fetch('/api/gacha/stats', { headers: authHeaders });
+        if (statsRes.ok) {
+          const statsData = await statsRes.json();
+          setSession({
+            sessionId: statsData.playerId ?? '',
+            ticketsRemaining: statsData.dailyLimit - statsData.pullsToday,
+            dailyLimit: statsData.dailyLimit,
+          });
+          setPityProgress(statsData.pityProgress ?? { current: 0, target: 50 });
+        }
+      } else {
+        // 游客：创建 guest session
+        const sessionRes = await fetch('/api/auth/guest', { method: 'POST' });
+        const sessionData = await sessionRes.json();
+
+        if (sessionRes.ok) {
+          setSession({
+            sessionId: sessionData.sessionId,
+            ticketsRemaining: sessionData.ticketsRemaining,
+            dailyLimit: sessionData.dailyLimit,
+          });
+        } else if (sessionRes.status === 409) {
+          setSession({
+            sessionId: sessionData.sessionId,
+            ticketsRemaining: 3,
+            dailyLimit: 3,
+          });
+        }
+
+        // 游客拉 stats（用 cookie 鉴权）
+        try {
+          const statsRes = await fetch('/api/gacha/stats');
+          if (statsRes.ok) {
+            const statsData = await statsRes.json();
+            setPityProgress(statsData.pityProgress ?? { current: 0, target: 50 });
+            if (sessionRes.status === 409) {
+              setSession((prev) =>
+                prev
+                  ? {
+                      ...prev,
+                      ticketsRemaining: statsData.dailyLimit - statsData.pullsToday,
+                      dailyLimit: statsData.dailyLimit,
+                    }
+                  : prev
+              );
+            }
+          }
+        } catch {
+          // Stats fetch failure is non-critical
+        }
       }
 
       // Fetch crates
@@ -72,29 +112,6 @@ export default function HomePage() {
       if (cratesRes.ok) {
         const cratesData = await cratesRes.json();
         setCrates(cratesData.crates ?? []);
-      }
-
-      // Fetch stats for pity progress
-      try {
-        const statsRes = await fetch('/api/gacha/stats');
-        if (statsRes.ok) {
-          const statsData = await statsRes.json();
-          setPityProgress(statsData.pityProgress ?? { current: 0, target: 50 });
-          if (sessionRes.status === 409) {
-            setSession((prev) =>
-              prev
-                ? {
-                    ...prev,
-                    ticketsRemaining:
-                      statsData.dailyLimit - statsData.pullsToday,
-                    dailyLimit: statsData.dailyLimit,
-                  }
-                : prev
-            );
-          }
-        }
-      } catch {
-        // Stats fetch failure is non-critical
       }
     } catch (err) {
       setError('初始化失败，请刷新重试');
@@ -110,10 +127,10 @@ export default function HomePage() {
     setShowUpgradePrompt(true);
   };
 
-  const handleUpgradeSuccess = (data: { accessToken: string; playerId: string; user: any }) => {
+  const handleUpgradeSuccess = async (data: { accessToken: string; playerId: string; user: any }) => {
     login(data.accessToken, data.playerId, data.user);
-    // 刷新页面以使用新的认证状态
-    window.location.reload();
+    // 重新初始化以加载用户数据（不再 reload，避免走游客流程）
+    await init();
   };
 
   // ==================== Loading State ====================
