@@ -18,7 +18,7 @@ interface UpgradePromptProps {
 }
 
 export function UpgradePrompt({ isOpen, onClose, guestSessionId, onUpgradeSuccess }: UpgradePromptProps) {
-  const [step, setStep] = useState<'intro' | 'form'>('intro');
+  const [step, setStep] = useState<'intro' | 'register' | 'login'>('intro');
 
   const handleSuccess = (data: { accessToken: string; playerId: string; user: any }) => {
     onUpgradeSuccess(data);
@@ -37,12 +37,14 @@ export function UpgradePrompt({ isOpen, onClose, guestSessionId, onUpgradeSucces
         <div className="mx-auto w-full max-w-sm">
           <DrawerHeader className="text-center">
             <DrawerTitle className="text-white">
-              {step === 'intro' ? '升级账号' : '创建账号'}
+              {step === 'intro' ? '升级账号' : step === 'register' ? '创建账号' : '登录'}
             </DrawerTitle>
             <DrawerDescription className="text-zinc-400">
-              {step === 'intro' 
+              {step === 'intro'
                 ? '升级后可保存抽卡记录，每日开箱次数从3次提升到5次'
-                : '请输入邮箱和密码完成注册'
+                : step === 'register'
+                ? '请输入邮箱和密码完成注册'
+                : '登录已有账号以同步数据'
               }
             </DrawerDescription>
           </DrawerHeader>
@@ -77,10 +79,16 @@ export function UpgradePrompt({ isOpen, onClose, guestSessionId, onUpgradeSucces
                 </ul>
 
                 <button
-                  onClick={() => setStep('form')}
+                  onClick={() => setStep('register')}
                   className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-black font-medium rounded-lg transition-colors"
                 >
-                  立即升级
+                  立即注册
+                </button>
+                <button
+                  onClick={() => setStep('login')}
+                  className="w-full py-3 bg-zinc-800 hover:bg-zinc-700 text-white font-medium rounded-lg transition-colors"
+                >
+                  已有账号，登录
                 </button>
                 <button
                   onClick={handleCancel}
@@ -91,8 +99,8 @@ export function UpgradePrompt({ isOpen, onClose, guestSessionId, onUpgradeSucces
               </div>
             ) : (
               <AuthForm
-                mode="register"
-                guestSessionId={guestSessionId}
+                mode={step === 'register' ? 'register' : 'login'}
+                guestSessionId={step === 'register' ? guestSessionId : undefined}
                 onSuccess={handleSuccess}
                 onCancel={() => setStep('intro')}
               />
