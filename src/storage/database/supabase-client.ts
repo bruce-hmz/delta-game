@@ -80,18 +80,26 @@ function readSupabaseConfig(): { url?: string; anonKey?: string; serviceRoleKey?
 }
 
 function getSupabaseCredentials(): SupabaseCredentials {
-  // Force config file only, ignore environment variables
+  // 优先从环境变量读取（Vercel 部署时使用）
+  const envUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const envAnonKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  
+  if (envUrl && envAnonKey) {
+    console.log('[Supabase Config] Using environment variables:', envUrl);
+    return { url: envUrl, anonKey: envAnonKey };
+  }
+  
+  // 回退到配置文件（本地开发时使用）
   const config = readSupabaseConfig();
   
   if (config.url && config.anonKey) {
-    // 直接返回配置，不使用环境变量
     console.log('[Supabase Config] Using supabase_config.json:', config.url);
     return { url: config.url, anonKey: config.anonKey };
   }
   
-  // 如果配置文件读取失败，抛出错误
-  console.error('[Supabase Config] Failed to read config, throwing error');
-  throw new Error('Failed to read Supabase config from supabase_config.json. Please ensure the file exists and contains valid JSON.');
+  // 如果都读取失败，抛出错误
+  console.error('[Supabase Config] Failed to read config from env or file');
+  throw new Error('Failed to read Supabase config. Please set SUPABASE_URL and SUPABASE_ANON_KEY environment variables, or ensure supabase_config.json exists.');
 }
 
 function getSupabaseClient(token?: string): SupabaseClient {
@@ -125,10 +133,27 @@ function getSupabaseClient(token?: string): SupabaseClient {
 
 // 服务端 Supabase Admin 客户端（使用 service_role key）
 export function getSupabaseAdminClient(): SupabaseClient {
+  // 优先从环境变量读取
+  const envUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const envServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  
+  if (envUrl && envServiceRoleKey) {
+    return createClient(envUrl, envServiceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+      db: {
+        timeout: 60000,
+      },
+    });
+  }
+  
+  // 回退到配置文件
   const config = readSupabaseConfig();
   
   if (!config.url || !config.serviceRoleKey) {
-    throw new Error('SUPABASE_SERVICE_ROLE_KEY not found in config. Admin operations require service role key.');
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY not found in config or environment. Admin operations require service role key.');
   }
   
   return createClient(config.url, config.serviceRoleKey, {
