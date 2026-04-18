@@ -6,6 +6,7 @@ import { rollQuality, generateItem } from "@/lib/game/gacha-service";
 import { getCrates } from "@/lib/game/gacha-service";
 import { seededRandom, PITY_THRESHOLD } from "@/lib/game/gacha-constants";
 import type { GachaQuality } from "@/lib/game/gacha-constants";
+import { getPlayerId } from "@/lib/auth/get-player-id";
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,12 +17,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "invalid_input" }, { status: 400 });
     }
 
-    // Get authenticated player ID (must be registered, not guest)
-    const authHeader = request.headers.get("authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
+    // Must be a registered user (not guest)
+    const auth = await getPlayerId(request);
+    if (!auth || auth.isGuest) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 });
     }
-    const playerId = authHeader.slice(7);
+    const playerId = auth.playerId;
 
     // Get guest session ID from cookie to identify the source
     const guestId = request.cookies.get("guest_session")?.value;

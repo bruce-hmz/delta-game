@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createGuestSession, ensurePlayerStreak } from "@/lib/game/gacha-service";
+import { signGuestSession } from "@/lib/auth/get-player-id";
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,13 +20,14 @@ export async function POST(request: NextRequest) {
     await ensurePlayerStreak(result.sessionId, 3);
 
     // Set httpOnly cookie with HMAC signature
+    const signedSession = signGuestSession(result.sessionId);
     const response = NextResponse.json({
       sessionId: result.sessionId,
       ticketsRemaining: result.ticketsRemaining,
       dailyLimit: result.dailyLimit,
     });
 
-    response.cookies.set("guest_session", result.sessionId, {
+    response.cookies.set("guest_session", signedSession, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
