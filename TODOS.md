@@ -6,7 +6,7 @@
 - **What:** Move all ticket, booster, battle pass, and cosmetic logic from localStorage to server-side API + DB.
 - **Why:** Current client-side enforcement is trivially exploitable. Any user can give themselves unlimited tickets via DevTools.
 - **Effort:** M (human: 3 days / CC: ~30min)
-- **Status:** TODO
+- **Status:** PARTIAL — ticket enforcement, auth, and gacha API are server-side. Boosters, battle pass, and cosmetics remain TODO.
 
 ### Sound design overhaul for gacha pulls
 - **What:** Frame-perfect sound timing matching CS:GO case opening rhythm (tick-tick-tick-BANG). Sound is 50% of the dopamine hit.
@@ -18,7 +18,7 @@
 - **What:** Unit tests for drop rate calculation, ticket enforcement, pull deduplication, collection integrity. Integration test for full pull cycle.
 - **Why:** Zero tests exist. Drop rate calculation is the core game logic. If it's wrong, the product is broken.
 - **Effort:** S (human: 1 day / CC: ~15min)
-- **Status:** TODO
+- **Status:** DONE — 103 tests passing (60 gacha + 43 extraction game). Covers drop rates, pull logic, ticket enforcement, map generation, fog of war, move validation, evacuation, auth HMAC verification.
 
 ## P1 — Must do before launch
 
