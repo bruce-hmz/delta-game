@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import GachaCanvas from '@/components/game/GachaCanvas';
+import { ExtractionGame } from '@/components/game/ExtractionGame';
 import type { GachaQuality } from '@/lib/game/gacha-constants';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { UpgradePrompt } from '@/components/auth/UpgradePrompt';
@@ -24,7 +25,7 @@ interface SessionInfo {
   dailyLimit: number;
 }
 
-type PageView = 'gacha' | 'collection' | 'stats' | 'probability';
+type PageView = 'gacha' | 'extraction' | 'collection' | 'stats' | 'probability';
 
 // ==================== Page Component ====================
 
@@ -198,13 +199,17 @@ export default function HomePage() {
         </div>
       )}
 
-      <GachaCanvas
-        crates={crates}
-        ticketsRemaining={session?.ticketsRemaining ?? 0}
-        dailyLimit={session?.dailyLimit ?? 3}
-        pityProgress={pityProgress}
-        accessToken={isAuthenticated ? accessToken : null}
-      />
+      {view === 'extraction' ? (
+        <ExtractionGame accessToken={isAuthenticated ? accessToken : null} />
+      ) : (
+        <GachaCanvas
+          crates={crates}
+          ticketsRemaining={session?.ticketsRemaining ?? 0}
+          dailyLimit={session?.dailyLimit ?? 3}
+          pityProgress={pityProgress}
+          accessToken={isAuthenticated ? accessToken : null}
+        />
+      )}
 
       {/* Bottom nav */}
       <div className="fixed bottom-0 left-0 right-0 flex items-center justify-around py-2 bg-[#0a0a0]/90 backdrop-blur-sm border-t border-zinc-900 max-w-[430px] mx-auto">
@@ -213,6 +218,12 @@ export default function HomePage() {
           onClick={() => setView('gacha')}
           icon="📦"
           label="开箱"
+        />
+        <NavButton
+          active={view === 'extraction'}
+          onClick={() => setView('extraction')}
+          icon="🎯"
+          label="暗区"
         />
         <NavLink href="/collection" icon="🏆" label="收藏" />
         <NavLink href="/stats" icon="📊" label="统计" />

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { executePull } from "@/lib/game/gacha-service";
+import { getPlayerId } from "@/lib/auth/get-player-id";
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,22 +14,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get player ID from guest session cookie or auth header
-    const playerId = getPlayerId(request);
-    if (!playerId) {
+    const auth = await getPlayerId(request);
+    if (!auth) {
       return NextResponse.json(
         { error: "unauthorized" },
         { status: 401 }
       );
     }
 
-    const isGuest = !request.headers.get("authorization");
-
     const result = await executePull({
-      playerId,
+      playerId: auth.playerId,
       crateId,
       idempotencyKey,
-      isGuest,
+      isGuest: auth.isGuest,
     });
 
     return NextResponse.json(result);
@@ -53,16 +51,3 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function getPlayerId(request: NextRequest): string | null {
-  // Authorization header takes priority (logged-in user)
-  const authHeader = request.headers.get("authorization");
-  if (authHeader?.startsWith("Bearer ")) {
-    return authHeader.slice(7);
-  }
-
-  // Fallback to guest session cookie
-  const guestSession = request.cookies.get("guest_session")?.value;
-  if (guestSession) return guestSession;
-
-  return null;
-}

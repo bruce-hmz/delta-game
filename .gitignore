@@ -105,3 +105,4 @@ client_secret*.json
 assets/client_secret*
 .env.backup
 .env.local.backup
+.gstack/
