@@ -13,17 +13,24 @@
 ```
 ├── public/                 # 静态资源
 ├── scripts/                # 构建与启动脚本
-│   ├── build.sh            # 构建脚本
-│   ├── dev.sh              # 开发环境启动脚本
-│   ├── prepare.sh          # 预处理脚本
-│   └── start.sh            # 生产环境启动脚本
 ├── src/
 │   ├── app/                # 页面路由与布局
-│   ├── components/ui/      # Shadcn UI 组件库
+│   │   ├── api/            # API 路由
+│   │   │   ├── auth/       # 认证（访客会话、注册）
+│   │   │   ├── gacha/      # 扭蛋（抽卡、统计、收藏）
+│   │   │   └── game/       # 暗区行动（开局、移动、撤离）
+│   │   └── page.tsx        # 首页
+│   ├── components/
+│   │   ├── ui/             # Shadcn UI 组件库
+│   │   └── game/           # 暗区行动游戏组件
 │   ├── hooks/              # 自定义 Hooks
-│   ├── lib/                # 工具库
+│   ├── lib/
+│   │   ├── auth/           # 认证模块（HMAC 签名、JWT 验证）
+│   │   ├── game/           # 游戏逻辑（扭蛋、暗区行动）
 │   │   └── utils.ts        # 通用工具函数 (cn)
-│   └── server.ts           # 自定义服务端入口
+│   ├── storage/database/   # Drizzle ORM + Supabase
+│   └── __tests__/          # 测试（Vitest, 103 tests）
+├── drizzle/                # 数据库迁移 SQL
 ├── next.config.ts          # Next.js 配置
 ├── package.json            # 项目依赖管理
 └── tsconfig.json           # TypeScript 配置

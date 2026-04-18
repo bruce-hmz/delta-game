@@ -32,22 +32,33 @@ coze start
 src/
 ├── app/                      # Next.js App Router 目录
 │   ├── layout.tsx           # 根布局组件
-│   ├── page.tsx             # 首页
+│   ├── page.tsx             # 首页（扭蛋 + 暗区行动）
 │   ├── globals.css          # 全局样式（包含 shadcn 主题变量）
+│   ├── api/
+│   │   ├── auth/            # 认证 API（访客会话、注册）
+│   │   ├── gacha/           # 扭蛋 API（抽卡、统计、收藏）
+│   │   └── game/            # 暗区行动 API（开局、移动、撤离）
 │   └── [route]/             # 其他路由页面
-├── components/              # React 组件目录
-│   └── ui/                  # shadcn/ui 基础组件（优先使用）
-│       ├── button.tsx
-│       ├── card.tsx
-│       └── ...
-├── lib/                     # 工具函数库
-│   └── utils.ts            # cn() 等工具函数
+├── components/
+│   ├── ui/                  # shadcn/ui 基础组件（优先使用）
+│   └── game/                # 暗区行动游戏组件
+│       ├── ExtractionGame.tsx
+│       ├── ExtractionMap.tsx
+│       ├── ZoneSelection.tsx
+│       └── useExtractionGame.ts
+├── lib/
+│   ├── utils.ts            # cn() 等工具函数
+│   ├── auth/               # 认证模块（HMAC 签名、JWT 验证）
+│   └── game/               # 游戏逻辑
+│       ├── gacha-constants.ts
+│       ├── gacha-service.ts
+│       └── extraction/     # 暗区行动（地图生成、搜刮、撤离）
+├── storage/database/        # 数据库（Drizzle ORM + Supabase）
+├── __tests__/               # 测试（Vitest, 103 tests）
+│   ├── gacha/
+│   ├── game/
+│   └── auth/
 └── hooks/                   # 自定义 React Hooks（可选）
-
-server/
-├── index.ts                 # 自定义服务器入口
-├── tsconfig.json           # Server TypeScript 配置
-└── dist/                    # 编译输出目录（自动生成）
 ```
 
 ## 核心开发规范
@@ -338,9 +349,12 @@ export const useStore = create<Store>((set) => ({
 
 ## 技术栈
 
-- **框架**: Next.js 16.1.1 (App Router)
+- **框架**: Next.js 16 (App Router, Turbopack)
 - **UI 组件**: shadcn/ui (基于 Radix UI)
 - **样式**: Tailwind CSS v4
+- **数据库**: Supabase (Postgres) + Drizzle ORM
+- **认证**: Supabase Auth (JWT) + HMAC-signed guest sessions
+- **测试**: Vitest (103 tests)
 - **表单**: React Hook Form + Zod
 - **图标**: Lucide React
 - **字体**: Geist Sans & Geist Mono
