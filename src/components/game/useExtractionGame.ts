@@ -58,7 +58,10 @@ export function useExtractionGame(accessToken: string | null) {
         body: JSON.stringify({ zoneId }),
       });
 
-      if (!response.ok) throw new Error('Failed to start run');
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || 'Failed to start run');
+      }
 
       const data = await response.json();
       setRunState({

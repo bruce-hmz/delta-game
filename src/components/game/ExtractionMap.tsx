@@ -106,18 +106,10 @@ export default function ExtractionMap({
   };
 
   const isAdjacentAndRevealed = (node: FogOfWarNode) => {
-    return adjacentNodes.some((adj) => adj.id === node.id) && node.revealed && !node.looted;
+    return adjacentNodes.some((adj) => adj.id === node.id) && node.type !== 'hidden' && !node.looted;
   };
 
   const sortedNodes = [...map].sort((a, b) => a.y - b.y || a.x - b.x);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gray-900">
-        <div className="text-white text-xl">加载中...</div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-900 text-white font-sans">
@@ -206,7 +198,7 @@ export default function ExtractionMap({
                   ${!node.revealed ? 'opacity-60' : ''}
                   ${isClickable ? 'cursor-pointer hover:brightness-110 active:scale-95' : ''}
                 `}
-                onClick={() => isClickable && onMove(node.id)}
+                onClick={() => isClickable && !loading && onMove(node.id)}
               >
                 {/* Trap Flash Overlay */}
                 {isCurrent && showTrapFlash && (
@@ -252,36 +244,58 @@ export default function ExtractionMap({
       </div>
 
       {/* Current Node Actions */}
-      {currentNode && currentNode.revealed && !moveResult?.gameOver && (
+      {currentNode && !moveResult?.gameOver && (
         <div className="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 p-4 z-50">
           <div className="max-w-md mx-auto">
+            {/* Loot result display */}
+            {moveResult && moveResult.items && moveResult.items.length > 0 && (
+              <div className="mb-3 space-y-1">
+                {moveResult.items.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between bg-gray-700 rounded px-3 py-1.5 text-sm">
+                    <span className={item.quality === 'purple' ? 'text-purple-400' : item.quality === 'blue' ? 'text-blue-400' : item.quality === 'red' ? 'text-red-400' : item.quality === 'gold' ? 'text-yellow-400' : 'text-gray-300'}>
+                      {item.itemName}
+                    </span>
+                    <span className="text-gray-400">{item.value}G</span>
+                  </div>
+                ))}
+                {moveResult.trapDamage > 0 && (
+                  <div className="text-red-400 text-sm text-center">陷阱！-{moveResult.trapDamage}HP</div>
+                )}
+              </div>
+            )}
+            {moveResult && moveResult.trapDamage > 0 && (!moveResult.items || moveResult.items.length === 0) && (
+              <div className="mb-3 text-red-400 text-sm text-center">陷阱！-{moveResult.trapDamage}HP</div>
+            )}
             {currentNode.type === 'loot' && !currentNode.looted && (
               <button
-                className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-6 rounded-lg transition-colors"
+                className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={() => onMove(currentNode.id)}
+                disabled={loading}
               >
-                搜刮
+                {loading ? '搜刮中...' : '搜刮'}
               </button>
             )}
             {currentNode.type === 'evac' && (
               <button
-                className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg transition-colors"
+                className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={onEvacuate}
+                disabled={loading}
               >
-                撤离
+                {loading ? '撤离中...' : '撤离'}
               </button>
             )}
-            {adjacentNodes.filter((n) => n.revealed && !n.looted).length > 0 && (
+            {adjacentNodes.filter((n) => n.type !== 'hidden' && !n.looted).length > 0 && (
               <div className="mt-3">
                 <div className="text-sm text-gray-400 mb-2">移动到相邻区域：</div>
                 <div className="grid grid-cols-2 gap-2">
                   {adjacentNodes
-                    .filter((n) => n.revealed && !n.looted)
+                    .filter((n) => n.type !== 'hidden' && !n.looted)
                     .map((node) => (
                       <button
                         key={node.id}
-                        className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-3 rounded text-sm transition-colors"
+                        className="bg-gray-700 hover:bg-gray-600 text-white py-2 px-3 rounded text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={() => onMove(node.id)}
+                        disabled={loading}
                       >
                         {getNodeIcon(node.type)} {getNodeLabel(node.type)}
                       </button>

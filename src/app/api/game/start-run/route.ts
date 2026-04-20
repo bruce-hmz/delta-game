@@ -3,6 +3,9 @@ import { startRun, getActiveRun } from "@/lib/game/extraction/extraction-service
 import { computeFogOfWar } from "@/lib/game/extraction/extraction-service";
 import { ZONES } from "@/lib/game/extraction/zone-config";
 import { getPlayerId } from "@/lib/auth/get-player-id";
+import { runs } from "@/storage/database/shared/schema";
+import { eq } from "drizzle-orm";
+import { getDrizzleClient } from "@/storage/database/drizzle-client";
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,9 +24,7 @@ export async function POST(request: NextRequest) {
     const runState = await startRun(auth.playerId, zoneId);
 
     // Return fog-of-war filtered map
-    const { runs } = await import("@/storage/database/shared/schema");
-    const { eq } = await import("drizzle-orm");
-    const db = (await import("@/storage/database/drizzle-client")).getDrizzleClient();
+    const db = getDrizzleClient();
     const runRows = await db
       .select()
       .from(runs)
@@ -45,6 +46,38 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     if (error.message === "active_run_exists") {
+      // Resume: return the existing active run instead of erroring
+      try {
+        const auth2 = await getPlayerId(request);
+        if (auth2) {
+          const activeRun = await getActiveRun(auth2.playerId);
+          if (activeRun) {
+            const db = getDrizzleClient();
+            const runRows = await db
+              .select()
+              .from(runs)
+              .where(eq(runs.id, activeRun.runId))
+              .limit(1);
+            const map2 = runRows[0].mapData as any;
+            const visited2 = (runRows[0].visitedNodeIds as string[]) || [];
+            const fogMap2 = computeFogOfWar(map2, visited2);
+
+            return NextResponse.json({
+              runId: activeRun.runId,
+              zoneId: activeRun.zoneId,
+              currentNodeId: activeRun.currentNodeId,
+              hp: activeRun.hp,
+              maxHp: activeRun.maxHp,
+              backpackCapacity: activeRun.backpackCapacity,
+              evacWaitTurns: activeRun.evacWaitTurns,
+              backpack: activeRun.backpack,
+              map: fogMap2,
+            });
+          }
+        }
+      } catch {
+        // fall through to 409
+      }
       return NextResponse.json(
         { error: "active_run_exists" },
         { status: 409 }
